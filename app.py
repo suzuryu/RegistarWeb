@@ -3,6 +3,7 @@ import json
 import pyodbc
 import pandas.io.sql as pdsql
 from makeDB import create_table
+import sqlite3
 
 app = Flask(__name__)
 
@@ -37,11 +38,9 @@ def products_delete():
         eq = request.get_json()
         sql_query = "DELETE FROM products WHERE id = ?"
         values = (eq['id'])
-
-        execute_query_sql(sql_query,values)
-
-        success = {"success": True}
-        return jsonify(success)
+        success = execute_query_sql(sql_query,values)
+        
+        return jsonify(success) 
 
 @app.route('/api/order/add', methods=['POST'])
 def order_add():
@@ -62,9 +61,7 @@ def order_delete():
         eq = request.get_json()
         sql_query = "DELETE FROM orders WHERE id = ?"
         values = (eq['id'])
-        execute_query_sql(sql_query, values)
-
-        success = {"success": True}
+        success = execute_query_sql(sql_query, values)
    
         return jsonify(success)
 
@@ -81,10 +78,14 @@ def order_total():
 def execute_query_sql(sql_query,values=()):
     con = pyodbc.connect(r'DRIVER={SQLite3 ODBC Driver};SERVER=localhost;DATABASE=salesioFes.db;Trusted_connection=yes')
     cur = con.cursor()
-    cur.execute(sql_query,values)
+    try:
+        cur.execute(sql_query,values)
+    except sqlite3.Error as e:
+        return {"success":False}
     con.commit()
     con.close()
-
+    return {"success":True}
+    
 def read_query_sql(sql_query, return_list=False):
     con = pyodbc.connect(r'DRIVER={SQLite3 ODBC Driver};SERVER=localhost;DATABASE=salesioFes.db;Trusted_connection=yes')
     df = pdsql.read_sql(sql_query, con)
